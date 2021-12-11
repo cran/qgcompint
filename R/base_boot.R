@@ -88,6 +88,9 @@ msm.emm.fit <- function(f,
   # TODO: categorical Z
   msmform <- .intmaker(as.formula(msmf), expnms = newexpnms, emmvars = emmvars)
   class(msmform) <- "formula"
+  newterms <- terms(msmform)
+  nterms = length(attr(newterms, "term.labels"))
+  nterms = nterms + attr(newterms, "intercept")
 
   # to do: allow functional form variations for the MSM via specifying the model formula
   if(bayes){
@@ -95,7 +98,7 @@ msm.emm.fit <- function(f,
                                                 weights=weights, x=TRUE,
                                                 ...))
     if(rr)  suppressWarnings(msmfit <- bayesglm(msmform, data=msmdat,
-                                                family=binomial(link='log'), start=rep(-0.0001, degree+1),
+                                                family=binomial(link='log'), start=rep(-0.0001, nterms),
                                                 weights=weights, x=TRUE))
   }
   if(!bayes){
@@ -103,7 +106,7 @@ msm.emm.fit <- function(f,
                                            weights=weights, x=TRUE,
                                            ...))
     if(rr)  suppressWarnings(msmfit <- glm(msmform, data=msmdat,
-                                           family=binomial(link='log'), start=rep(-0.0001, degree+1),
+                                           family=binomial(link='log'), start=rep(-0.0001, nterms),
                                            weights=weights, x=TRUE))
   }
   res <- list(fit=fit, msmfit=msmfit)
@@ -115,7 +118,7 @@ msm.emm.fit <- function(f,
     res[[emmvar]] <- do.call(c, lapply(intvals, function(x) newdata[,emmvar]))
     # upper cut-point as first quantile)
   }
-  newterms <- terms(msmform)
+  #newterms <- terms(msmform)
   #prodterms <- do.call(c, lapply(1:length(emmvars), function(x) c(emmvars[x], paste0(emmvars[x], ":mixture"))))
   newtermlabels <- attr(newterms, "term.labels")
   #newtermlabels[(degree+1):length(newtermlabels)] <- prodterms
@@ -200,7 +203,7 @@ qgcomp.emm.boot <- function(
   #'  error at a given value of MCsize). This likely won't matter much in linear models, but may
   #'  be important with binary or count outcomes.
   #' @param parallel use (safe) parallel processing from the future and future.apply packages
-  #' @param parplan (logical, default=FALSE) automatically set future::plan to plan(multisession) (and set to plan(transparent) after bootstrapping)
+  #' @param parplan (logical, default=FALSE) automatically set future::plan to plan(multisession) (and set to existing plan after bootstrapping)
   #' @param errcheck (logical, default=TRUE) include some basic error checking. Slightly
   #' faster if set to false (but be sure you understand risks)
   #' @param ... arguments to glm (e.g. family)
@@ -223,18 +226,20 @@ qgcomp.emm.boot <- function(
   #'   z=rbinom(50,1,0.5), r=rbinom(50,1,0.5))
   #' (qfit <- qgcomp.emm.noboot(f=y ~ z + x1 + x2, emmvar="z",
   #'   expnms = c('x1', 'x2'), data=dat, q=4, family=gaussian()))
+  #' # set B larger for real examples
   #' (qfit2 <- qgcomp.emm.boot(f=y ~ z + x1 + x2, emmvar="z",
   #'   degree = 1,
-  #'   expnms = c('x1', 'x2'), data=dat, q=4, family=gaussian()))
+  #'   expnms = c('x1', 'x2'), data=dat, q=4, family=gaussian(), B=10))
   #' # categorical modifier
   #' dat2 <- data.frame(y=runif(50), x1=runif(50), x2=runif(50),
   #'   z=sample(0:2, 50,replace=TRUE), r=rbinom(50,1,0.5))
   #' dat2$z = as.factor(dat2$z)
   #' (qfit3 <- qgcomp.emm.noboot(f=y ~ z + x1 + x2, emmvar="z",
   #'   expnms = c('x1', 'x2'), data=dat2, q=4, family=gaussian()))
+  #' # set B larger for real examples
   #' (qfit4 <- qgcomp.emm.boot(f=y ~ z + x1 + x2, emmvar="z",
   #'   degree = 1,
-  #'   expnms = c('x1', 'x2'), data=dat2, q=4, family=gaussian()))
+  #'   expnms = c('x1', 'x2'), data=dat2, q=4, family=gaussian(), B=10))
   oldq = NULL
   if(is.null(seed)) seed = round(runif(1, min=0, max=1e8))
 
@@ -381,14 +386,18 @@ qgcomp.emm.boot <- function(
   set.seed(seed)
   if(parallel){
     #Sys.setenv(R_FUTURE_SUPPORTSMULTICORE_UNSTABLE="quiet")
-    if(parplan) future::plan(strategy = future::multisession)
+    if (parplan) {
+        oplan <- future::plan(strategy = future::multisession)
+        on.exit(future::plan(oplan), add = TRUE)
+    }
+
     bootsamps <- future.apply::future_lapply(X=seq_len(B), FUN=psi.emm.only,f=f, qdata=qdata, intvals=intvals,
                                              emmvar=emmvar, emmvars=emmvars, expnms=expnms, rr=rr, degree=degree, nids=nids, id=id,
                                              weights=qdata$weights,MCsize=MCsize,
                                              future.seed=TRUE,
                                              ...)
 
-    if(parplan) future::plan(strategy = future::transparent)
+
   }else{
     bootsamps <- lapply(X=seq_len(B), FUN=psi.emm.only,f=f, qdata=qdata, intvals=intvals,
                         emmvar=emmvar, emmvars=emmvars, expnms=expnms, rr=rr, degree=degree, nids=nids, id=id,

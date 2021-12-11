@@ -830,22 +830,16 @@ qfit2
 <pre><code class="r">print(modelbound(qfit2b, emmval=2))
 </code></pre>
 
-<pre><code>## Warning in log(p): NaNs produced
-</code></pre>
-
-<pre><code>## Warning in log(1 - p): NaNs produced
-</code></pre>
-
-<pre><code>##   quantile quantile.midpoint    linpred         o     se.pw     ll.pw     ul.pw
-## 1        0             0.125        NaN       NaN 1.2661890       NaN       NaN
-## 2        1             0.375        NaN       NaN 0.5710160       NaN       NaN
-## 3        2             0.625 -0.9518898 0.3860109 0.4052568 0.1744393 0.8541905
-## 4        3             0.875        NaN       NaN 1.0572398       NaN       NaN
-##       ll.simul    ul.simul emm_level
-## 1 0.0007095563   0.4229837         2
-## 2 0.0419603132   0.5707457         2
-## 3 0.4743186869   3.8697252         2
-## 4 0.5022773114 146.7379296         2
+<pre><code>##   quantile quantile.midpoint    linpred          o     se.pw       ll.pw
+## 1        0             0.125 -3.2991126 0.03691591 1.2661890 0.003086254
+## 2        1             0.375 -1.5103038 0.22084287 0.5710160 0.072116341
+## 3        2             0.625  0.2785049 1.32115312 0.4052568 0.597032424
+## 4        3             0.875  2.0673137 7.90356305 1.0572398 0.995173466
+##        ul.pw     ll.simul    ul.simul emm_level
+## 1  0.4415660 0.0007095563   0.4229837         2
+## 2  0.6762902 0.0419603132   0.5707457         2
+## 3  2.9235356 0.4743186869   3.8697252         2
+## 4 62.7692669 0.5022773114 146.7379296         2
 </code></pre>
 
 <pre><code class="r">print(&quot;Plot pointwise comparisons at Z=2 from bootstrapped fit&quot;)
