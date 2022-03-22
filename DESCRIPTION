@@ -1,8 +1,8 @@
 Package: qgcompint
 Title: Quantile G-Computation Extensions for Effect Measure
         Modification
-Version: 0.6.6
-Date: 2021-12-11
+Version: 0.7.0
+Date: 2022-03-22
 Authors@R: 
     person(given = "Alexander",
            family = "Keil",
@@ -24,12 +24,12 @@ License: GPL (>= 2)
 Depends: R (>= 3.5.0)
 Imports: qgcomp, arm, survival, future, future.apply, ggplot2,
         gridExtra
-Suggests: knitr, markdown
+Suggests: knitr, markdown, devtools
 VignetteBuilder: knitr
 Encoding: UTF-8
 Language: en-US
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
 NeedsCompilation: no
-Packaged: 2021-12-11 08:18:46 UTC; akeil
+Packaged: 2022-03-22 15:36:32 UTC; akeil
 Repository: CRAN
-Date/Publication: 2021-12-11 19:30:13 UTC
+Date/Publication: 2022-03-22 16:00:02 UTC
