@@ -2,22 +2,48 @@
 % Please edit documentation in R/base_plot.R
 \name{plot.qgcompemmfit}
 \alias{plot.qgcompemmfit}
-\title{Default plotting method for a qgcompfit object}
+\title{Default plotting method for a qgcompemmfit object}
 \usage{
-\method{plot}{qgcompemmfit}(x, emmval = 0, suppressprint = FALSE, ...)
+\method{plot}{qgcompemmfit}(
+  x,
+  emmval = NULL,
+  suppressprint = FALSE,
+  geom_only = FALSE,
+  modelband = FALSE,
+  flexfit = FALSE,
+  modelfitline = FALSE,
+  pointwisebars = TRUE,
+  pointwiseref = 1,
+  alpha = 0.05,
+  ...
+)
 }
 \arguments{
-\item{x}{"qgcompfit" object from \code{qgcomp.noboot},  \code{qgcomp.boot},
-\code{qgcomp.cox.noboot},  \code{qgcomp.cox.boot}, \code{qgcomp.zi.noboot} or \code{qgcomp.zi.boot} functions}
+\item{x}{"qgcompemmfit" object from \code{qgcomp.emm.glm.noboot}, \code{qgcomp.emm.glm.boot},
+\code{qgcomp.emm.glm.ee}, or \code{qgcomp.emm.cox.noboot} functions}
 
 \item{emmval}{fixed value for effect measure modifier at which pointwise comparisons are calculated}
 
 \item{suppressprint}{If TRUE, suppresses the plot, rather than printing it
 by default (it can be saved as a ggplot2 object (or list of ggplot2 objects if x is from a zero-
-inflated model) and used programmatically)
+inflated model) and used programmatically)}
+
+\item{geom_only}{If TRUE, returns only the geometry (i.e. does not contain the entire plot object). Used for overlays. Only used for \code{.ee} and \code{.boot} methods.
 (default = FALSE)}
 
-\item{...}{unused}
+\item{modelband}{(boot/ee only) If TRUE (FALSE=default), adds 95\% prediction bands for E(Y|joint exposure) (the MSM fit)}
+
+\item{flexfit}{(boot/ee only) if TRUE (FALSE=default), adds flexible interpolation of predictions from underlying (conditional) model}
+
+\item{modelfitline}{(boot/ee only) If TRUE (FALSE=default), adds fitted (MSM) regression line of E(Y|joint exposure) to the smooth regression line plot}
+
+\item{pointwisebars}{(boot/ee only) If TRUE (TRUE=default), adds 95\% error bars for pointwise comparisons of E(Y|joint exposure) to the smooth regression line plot}
+
+\item{pointwiseref}{(boot/ee only) integer (0=default): which category of exposure (from 1 to q) should serve as the referent category for pointwise comparisons? (default=1)}
+
+\item{alpha}{alpha level for all confidence intervals}
+
+\item{...}{Arguments (listed under ``details'' ) to underlying functions:}
 }
 \value{
 If suppressprint=FALSE, then this function prints a plot specific to a "qgcompemmfit" object.
@@ -27,39 +53,54 @@ If bootstrapping is used, it will print a joint regression line for all exposure
 If suppressprint=TRUE, then this function returns a "gg" (regression line) or "gtable" (butterfly plot) object (from ggplot2 package or gtable/grid packages), which can be used to print a ggplot figure and modify either of the above figures (see example below)
 }
 \description{
-Plot a quantile g-computation object. For qgcomp.noboot, this function will
-create a butterfly plot of weights. For qgcomp.boot, this function will create
+Plot a quantile g-computation object from qgcompint.
+For qgcomp.emm.glm.noboot, this function will create a butterfly plot of
+weights. For qgcomp.emm.glm.boot and qgcomp.emm.glm.ee, this function will create
 a box plot with smoothed line overlaying that represents a non-parametric
 fit of a model to the expected outcomes in the population at each quantile
-of the joint exposures (e.g. '1' represents 'at the first quantile for
+of the joint exposures (e.g. '0' represents 'at the lowest quantile for
 every exposure')
+}
+\details{
+The \code{...} argument calls underlying plot functions, with arguments given here (similar to the plot function in the \code{qgcomp} package)
 }
 \examples{
 set.seed(50)
 # linear model, binary modifier
 dat <- data.frame(y=runif(50), x1=runif(50), x2=runif(50),
-z=rbinom(50,1,0.5), r=rbinom(50,1,0.5))
-(qfit <- qgcomp.emm.noboot(f=y ~ z + x1 + x2, emmvar="z",
+z=rbinom(50, 1, 0.5), r=rbinom(50, 1, 0.5))
+(qfit <- qgcomp.emm.glm.noboot(f=y ~ z + x1 + x2, emmvar="z",
 expnms = c('x1', 'x2'), data=dat, q=2, family=gaussian()))
 plot(qfit, emmval = 1)
 #
 library(ggplot2)
 
+# example with estimating equation approach
+dat2 <- data.frame(y=runif(50), x1=runif(50), x2=runif(50),
+z=sample(0:2, 50, replace=TRUE), r=rbinom(50, 1, 0.5))
+dat2$z = as.factor(dat2$z)
+(qfit4ee <- qgcomp.emm.glm.ee(f=y ~ z + x1 + x2, emmvar="z",
+                          degree = 1,
+                         expnms = c('x1', 'x2'), data=dat2, q=4, family=gaussian()))
+pp0ee = plot(qfit4ee, emmval=0, suppressprint=TRUE)
+pp1ee = plot(qfit4ee, emmval=1, suppressprint=TRUE)
+pp2ee = plot(qfit4ee, emmval=2, suppressprint=TRUE)
+pp1ee + theme_linedraw() # can use with other ggplot functions
 # example with bootstrapping
 dat2 <- data.frame(y=runif(50), x1=runif(50), x2=runif(50),
-z=sample(0:2, 50,replace=TRUE), r=rbinom(50,1,0.5))
+z=sample(0:2, 50, replace=TRUE), r=rbinom(50, 1, 0.5))
 dat2$z = as.factor(dat2$z)
-(qfit4 <- qgcomp.emm.boot(f=y ~ z + x1 + x2, emmvar="z",
+(qfit4 <- qgcomp.emm.glm.boot(f=y ~ z + x1 + x2, emmvar="z",
                           degree = 1, B = 20,
                          expnms = c('x1', 'x2'), data=dat2, q=4, family=gaussian()))
-plot(qfit4)
 pp0 = plot(qfit4, emmval=0, suppressprint=TRUE)
 pp1 = plot(qfit4, emmval=1, suppressprint=TRUE)
 pp2 = plot(qfit4, emmval=2, suppressprint=TRUE)
 pp1 + theme_linedraw() # can use with other ggplot functions
 
 # overlay (fussy to work with)
-ppom <- ggplot_build(pp0 + pp1[2] + pp2[[2]] + scale_color_discrete(guide="none"))
+#ppom <- ggplot_build(pp0 + pp1[2] + pp2[[2]] + scale_color_discrete(guide="none"))
+ppom <- ggplot_build(pp0ee + pp1ee[2] + pp2ee[[2]] + scale_color_discrete(guide="none"))
 ppom$data[[1]]$colour <- ppom$data[[2]]$colour <- "gray40" # emmval = 0 -> dark gray
 ppom$data[[3]]$colour <- ppom$data[[4]]$colour <- "gray80" # emmval = 1 -> light gray
 ppom$data[[5]]$colour <- ppom$data[[6]]$colour <- "black" # emmval = 2 -> black
@@ -78,12 +119,12 @@ library(gtable) # may need to separately install gtable
 pp2 <- plot(qfit, emmval = 1, suppressprint=TRUE)
 grid.draw(pp2)
 # insert row on top that is 1/2 height of existing plot
-pp2b = gtable::gtable_add_rows(pp2, heights=unit(0.5, 'null') ,pos = 0)
+pp2b = gtable::gtable_add_rows(pp2, heights=unit(0.5, 'null') , pos = 0)
 # add plot to that row
-pp3 = gtable::gtable_add_grob(pp2b, ggplot2::ggplotGrob(pp), t=1,l=1,r=2)
+pp3 = gtable::gtable_add_grob(pp2b, ggplot2::ggplotGrob(pp), t=1, l=1, r=2)
 grid.draw(pp3)
 }
 }
 \seealso{
-\code{\link[qgcomp]{qgcomp.noboot}}, \code{\link[qgcomp]{qgcomp.boot}}, and \code{\link[qgcomp]{qgcomp}}
+\code{\link[qgcompint]{qgcomp.emm.glm.noboot}}, \code{\link[qgcompint]{qgcomp.emm.glm.boot}},  \code{\link[qgcompint]{qgcomp.emm.glm.ee}}, \code{\link[qgcompint]{qgcomp.emm.cox.noboot}}
 }

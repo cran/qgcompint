@@ -1,32 +1,6 @@
 
-.intmaker <- function(
-  f,
-  expnms,
-  emmvars
-){
-  rightside = as.character(f)[3]
-  trms = strsplit(gsub(" ", "", rightside), "+",fixed=TRUE)[[1]]
-  expidx <- which(trms %in% expnms)
-  newtrmsl = lapply(emmvars, function(x) paste(paste0(trms[expidx], "*", x), collapse = "+"))
-  newtrms = paste0(newtrmsl, collapse="+")
-  newrightside = paste(rightside, "+", newtrms)
-  newf <- as.formula(paste0(as.character(f)[2],as.character(f)[1], newrightside))
-  newf
-}
 
-.intchecknames <- function(terms,emmvar){
-  #nonlin <- ifelse(sum(grep("\\(|\\:|\\^", terms)) > 0, TRUE,
-  #                 FALSE)
-  nonlin <- any(attr(terms,"order")>1)
-  if (nonlin) {
-    return(FALSE)
-  }
-  else {
-    return(TRUE)
-  }
-}
-
-qgcomp.emm.noboot <- function(
+qgcomp.emm.glm.noboot <- function(
   f,
   data,
   expnms=NULL,
@@ -38,7 +12,7 @@ qgcomp.emm.noboot <- function(
   alpha=0.05,
   bayes=FALSE,
   errcheck = TRUE,
-  ...){
+  ...) {
   #' @title EMM for Quantile g-computation for continuous, binary, and count outcomes under linearity/additivity
   #'
   #' @description This function fits a quantile g-computation model, allowing
@@ -89,34 +63,34 @@ qgcomp.emm.noboot <- function(
   #' set.seed(50)
   #' # linear model, binary modifier
   #' dat <- data.frame(y=runif(50), x1=runif(50), x2=runif(50),
-  #'   z=rbinom(50,1,0.5), r=rbinom(50,1,0.5))
-  #' (qfit <- qgcomp.emm.noboot(f=y ~ z + x1 + x2, emmvar="z",
+  #'   z=rbinom(50, 1, 0.5), r=rbinom(50, 1, 0.5))
+  #' (qfit <- qgcomp.emm.glm.noboot(f=y ~ z + x1 + x2, emmvar="z",
   #'   expnms = c('x1', 'x2'), data=dat, q=2, family=gaussian()))
   #' # logistic model, continuous modifier
-  #' dat2 <- data.frame(y=rbinom(50, 1,0.5), x1=runif(50), x2=runif(50),
-  #'   z=runif(50), r=rbinom(50,1,0.5))
-  #' (qfit2 <- qgcomp.emm.noboot(f=y ~ z + x1 + x2, emmvar="z",
+  #' dat2 <- data.frame(y=rbinom(50, 1, 0.5), x1=runif(50), x2=runif(50),
+  #'   z=runif(50), r=rbinom(50, 1, 0.5))
+  #' (qfit2 <- qgcomp.emm.glm.noboot(f=y ~ z + x1 + x2, emmvar="z",
   #'   expnms = c('x1', 'x2'), data=dat2, q=2, family=binomial()))
   #' # get weights and stratum specific effects at specific value of Z
   #' #  (note that when Z=0, the effect is equal to psi1)
-  #' qgcompint::getstratweights(qfit2,emmval=0)
-  #' qgcompint::getstrateffects(qfit2,emmval=0)
-  #' qgcompint::getstratweights(qfit2,emmval=0.5)
-  #' qgcompint::getstrateffects(qfit2,emmval=0.5)
+  #' qgcompint::getstratweights(qfit2, emmval=0)
+  #' qgcompint::getstrateffects(qfit2, emmval=0)
+  #' qgcompint::getstratweights(qfit2, emmval=0.5)
+  #' qgcompint::getstrateffects(qfit2, emmval=0.5)
   #' # linear model, categorical modifier
   #' dat3 <- data.frame(y=runif(50), x1=runif(50), x2=runif(50),
-  #'   z=as.factor(sample(0:2, 50,replace=TRUE)), r=rbinom(50,1,0.5))
-  #' (qfit3 <- qgcomp.emm.noboot(f=y ~ z + x1 + x2, emmvar="z",
+  #'   z=as.factor(sample(0:2, 50, replace=TRUE)), r=rbinom(50, 1, 0.5))
+  #' (qfit3 <- qgcomp.emm.glm.noboot(f=y ~ z + x1 + x2, emmvar="z",
   #'   expnms = c('x1', 'x2'), data=dat3, q=2, family=gaussian()))
   #' # get weights and stratum specific effects at each value of Z
   #' #  (note that when Z=0, the effect is equal to psi1)
-  #' qgcompint::getstratweights(qfit3,emmval=0)
-  #' qgcompint::getstrateffects(qfit3,emmval=0)
-  #' qgcompint::getstratweights(qfit3,emmval=1)
-  #' qgcompint::getstrateffects(qfit3,emmval=1)
-  #' qgcompint::getstratweights(qfit3,emmval=2)
-  #' qgcompint::getstrateffects(qfit3,emmval=2)
-  if(errcheck){
+  #' qgcompint::getstratweights(qfit3, emmval=0)
+  #' qgcompint::getstrateffects(qfit3, emmval=0)
+  #' qgcompint::getstratweights(qfit3, emmval=1)
+  #' qgcompint::getstrateffects(qfit3, emmval=1)
+  #' qgcompint::getstratweights(qfit3, emmval=2)
+  #' qgcompint::getstrateffects(qfit3, emmval=2)
+  if (errcheck) {
     # basic argument checks
     if (is.null(expnms)) {
       stop("'expnms' must be specified explicitly\n")
@@ -124,49 +98,51 @@ qgcomp.emm.noboot <- function(
     if (is.null(emmvar)) {
       stop("'emmvar' must be specified explicitly\n")
     }
-    #if (is.factor(data[,emmvar])) {
+    #if (is.factor(data[, emmvar])) {
       #stop("'emmvar' must be numeric\n")
     #}
   }
   # housekeeping
-  allemmvals<- unique(data[,emmvar])
+  allemmvals <- unique(data[, emmvar, drop=TRUE])
+  if (!(inherits(allemmvals, "numeric") || inherits(allemmvals, "factor") || inherits(allemmvals, "integer")))
+    stop("Modifier must be of types: numeric, integer or factor (convert to one of these types to proceed)")
   emmlev <- length(allemmvals)
   ## process to expand factors if needed
-  zdata = zproc(data[,emmvar], znm = emmvar)
+  zdata = zproc(data[, emmvar, drop=TRUE], znm = emmvar)
   emmvars = names(zdata)
   data = cbind(data, zdata)
   ### end new
-  if(errcheck){
-    #if( emmlev == 2 && !all.equal(range(allemmvals), c(0,1))){
+  if (errcheck) {
+    #if ( emmlev == 2 && !all.equal(range(allemmvals), c(0, 1))) {
     #  stop(paste0("Variable ", emmvar, " should only take on 0/1 values"))
     #}
-    #if(min(data[,emmvar])>0 || max(data[,emmvar])<0){
+    #if (min(data[, emmvar])>0 || max(data[, emmvar])<0) {
     #  message(paste0("Note: default weights reported are for exposure effects at ", emmvar, " = 0"))
     #}
   }
   # keep track of added terms by remembering old model
   originalform <- terms(f, data = data)
   hasintercept = as.logical(attr(originalform, "intercept"))
-  #f = .intmaker(f,expnms,emmvar) # create necessary interaction terms with exposure
-  (f <- .intmaker(f,expnms,emmvars)) # create necessary interaction terms with exposure
+  #f = .intmaker(f, expnms, emmvar) # create necessary interaction terms with exposure
+  (f <- .intmaker(f, expnms, emmvars, emmvar)) # create necessary interaction terms with exposure
   newform <- terms(f, data = data)
   addedterms <- setdiff(attr(newform, "term.labels"), attr(originalform, "term.labels"))
-  addedmain <- setdiff(addedterms, grep(":",addedterms, value = TRUE))
+  addedmain <- setdiff(addedterms, grep(":", addedterms, value = TRUE))
   addedints <- setdiff(addedterms, addedmain)
   addedintsl <- lapply(emmvars, function(x) grep(x, addedints, value = TRUE))
 
   #if (length(addedmain)>0) {
-  #  message(paste0("Adding main term for ",emmvar," to the model\n"))
+  #  message(paste0("Adding main term for ", emmvar, " to the model\n"))
   #}
   #oord <- order(expnms)
   ## order interaction terms in same order as main terms
-  #s0 <- gsub(paste0("^", emmvar,":"), "",
-  #      gsub(paste0(":", emmvar,"$"), "", addedints))
+  #s0 <- gsub(paste0("^", emmvar, ":"), "",
+  #      gsub(paste0(":", emmvar, "$"), "", addedints))
   #intord = order(s0)
   #equalord = all.equal(oord, intord)
   addedintsord = addedints
-  #if( equalord ) addedintsord = addedints
-  #if( !equalord ){
+  #if ( equalord ) addedintsord = addedints
+  #if ( !equalord ) {
   #  neword = match(s0, expnms)
   #  addedintsord = addedints[neword]
   #}
@@ -181,13 +157,14 @@ qgcomp.emm.noboot <- function(
   #
   thecall[[1L]] <- quote(stats::model.frame)
   thecalle <- eval(thecall, parent.frame())
-  if(hasweights){
+  if (hasweights) {
     data$weights <- as.vector(model.weights(thecalle))
   } else data$weights = rep(1, nobs)
   #
   lin = .intchecknames(expnms)
-  if(!lin) stop("Model appears to be non-linear: this is not yet implemented")
-  if (!is.null(q) | !is.null(breaks)){
+  if (!lin) stop("Model appears to be non-linear: this is not yet implemented")
+  if (!is.null(q) || !is.null(breaks)) {
+  # TODO: expand error checking here from qgcomp package
     ql <- quantize(data, expnms, q, breaks)
     qdata <- ql$data
     br <- ql$breaks
@@ -195,39 +172,39 @@ qgcomp.emm.noboot <- function(
     qdata <- data
     br <- breaks
   }
-  if(is.null(id)) {
+  if (is.null(id)) {
     # not yet implemented
     id = "id__"
     qdata$id__ = seq_len(dim(qdata)[1])
   }
   #
-  if(!bayes) fit <- glm(newform, data = qdata,
+  if (!bayes) fit <- glm(newform, data = qdata,
                         weights=weights,
                         ...)
-  if(bayes){
+  if (bayes) {
     requireNamespace("arm")
     fit <- arm::bayesglm(newform, data = qdata,
                     weights=weights,
                     ...)
   }
   mod <- summary(fit)
-  if(length(setdiff(expnms, rownames(mod$coefficients)))>0){
+  if (length(setdiff(expnms, rownames(mod$coefficients)))>0) {
     stop("Model aliasing occurred, likely due to perfectly correlated quantized exposures.
            Try one of the following:
-             1) set 'bayes' to TRUE in the qgcomp function (recommended)
-             2) set 'q' to a higher value in the qgcomp function (recommended)
+             1) set 'bayes' to TRUE in the qgcomp function(recommended)
+             2) set 'q' to a higher value in the qgcomp function(recommended)
              3) check correlation matrix of exposures, and drop all but one variable in each highly correlated set  (not recommended)
            ")
   }
   # intercept, main effect term
-  estb <- sum(mod$coefficients[expnms,1, drop=TRUE])
+  estb <- sum(mod$coefficients[expnms, 1, drop=TRUE])
   seb <- se_comb2(expnms, covmat = mod$cov.scaled)
-  if(hasintercept){
+  if (hasintercept) {
     estb <- c(fit$coefficients[1], estb)
-    seb <- c(sqrt(mod$cov.scaled[1,1]), seb)
+    seb <- c(sqrt(mod$cov.scaled[1, 1]), seb)
   }
   #seb <- c(
-  #  sqrt(mod$cov.scaled[1,1]),
+  #  sqrt(mod$cov.scaled[1, 1]),
   #  se_comb2(expnms, covmat = mod$cov.scaled)
   #)
   tstat <- estb / seb
@@ -242,11 +219,11 @@ qgcomp.emm.noboot <- function(
   # modifier main term, product term
   estb.prod <- do.call(c, lapply(1:length(emmvars), function(x) c(
     fit$coefficients[emmvars[x]],
-    sum(mod$coefficients[addedintsl[[x]],1, drop=TRUE])
+    sum(mod$coefficients[addedintsl[[x]], 1, drop=TRUE]) # this is needed to catch dropped terms
   )))
   names(estb.prod) <- do.call(c, lapply(1:length(emmvars), function(x) c(emmvars[x], paste0(emmvars[x], ":mixture"))))
   seb.prod <- do.call(c, lapply(1:length(emmvars), function(x) c(
-    sqrt(mod$cov.scaled[emmvars[x],emmvars[x]]),
+    sqrt(mod$cov.scaled[emmvars[x], emmvars[x]]),
     se_comb2(addedintsl[[x]], covmat = mod$cov.scaled)
   )))
   tstat.prod <- estb.prod / seb.prod
@@ -273,12 +250,12 @@ qgcomp.emm.noboot <- function(
   #names(estb)[psiidx] <- c("psi1")
   cnms = "psi1"
   inames = NULL
-  if(hasintercept){
+  if (hasintercept) {
     inames= "(Intercept)"
     cnms = c(inames, cnms)
   }
   covmat.coef = vc_multiscomb(inames = inames, emmvars=emmvars,
-          expnms=expnms,addedintsl=addedintsl, covmat=mod$cov.scaled, grad = NULL
+          expnms=expnms, addedintsl=addedintsl, covmat=mod$cov.scaled, grad = NULL
   )
   names(estb) <- cnms
   colnames(covmat.coef) <- rownames(covmat.coef) <- names(c(estb, estb.prod))
@@ -291,8 +268,8 @@ qgcomp.emm.noboot <- function(
     var.psiint = seb.prod[2*(1:length(emmvars))] ^ 2,
     covmat.psi=covmat.coef["psi1", "psi1"],
     covmat.psiint=covmat.coef[grep("mixture", colnames(covmat.coef)), grep("mixture", colnames(covmat.coef))], # to fix
-    ci = ci[psiidx,],
-    ciint = ci.prod[2*(1:length(emmvars)),],
+    ci = ci[psiidx, ],
+    ciint = ci.prod[2*(1:length(emmvars)), ],
     coef = c(estb, estb.prod),
     var.coef = c(seb ^ 2, seb.prod ^ 2),
     #covmat.coef=c('(Intercept)' = seb[1]^2, 'psi1' = seb[2]^2),
@@ -314,12 +291,14 @@ qgcomp.emm.noboot <- function(
     cov.yhat=NULL,
     alpha=alpha,
     call=origcall,
-    emmlev = emmlev
+    emmlev = emmlev,
+    emmvals = allemmvals,
+    hasintercept = hasintercept
   )
   # include some extra things by default for binary modifier (convenience only)
-  if(emmlev==2){
-    ww = getstratweights(res, emmval = 1)
-    ff = getstrateffects(res, emmval = 1)
+  if (emmlev==2) {
+    ww = getstratweights(res, emmval = allemmvals[2])
+    ff = getstrateffects(res, emmval = allemmvals[2])
     cl = class(res)
     res = c(res,
             list(
@@ -338,12 +317,12 @@ qgcomp.emm.noboot <- function(
     )
     class(res) = cl
   }
-  if(fit$family$family=='gaussian'){
+  if (fit$family$family=='gaussian') {
     res$tstat <- c(tstat, tstat.prod)
     res$df <- df
-    res$pval <- c(pval,pval.prod)
+    res$pval <- c(pval, pval.prod)
   }
-  if(fit$family$family %in% c('binomial', 'poisson')){
+  if (fit$family$family %in% c('binomial', 'poisson')) {
     res$zstat <- c(tstat, tstat.prod)
     res$pval <- c(pvalz, pvalz.prod)
   }
@@ -351,7 +330,6 @@ qgcomp.emm.noboot <- function(
 }
 
 
-
-
-
-
+#' @rdname qgcomp.emm.glm.noboot
+#' @export
+qgcomp.emm.noboot <- qgcomp.emm.glm.noboot

@@ -2,12 +2,12 @@
 % Please edit documentation in R/base_bounds.R
 \name{pointwisebound}
 \alias{pointwisebound}
-\title{Estimating pointwise comparisons for qgcompint fits}
+\title{Estimating pointwise comparisons for qgcompemmfit objects}
 \usage{
-pointwisebound(x, alpha = 0.05, pointwiseref = 1, emmval = 0, ...)
+pointwisebound(x, alpha = 0.05, pointwiseref = 1, emmval = NULL, ...)
 }
 \arguments{
-\item{x}{qgcompemmfit object from qgcomp.emm.noboot}
+\item{x}{"qgcompemmfit" object from \code{qgcomp.emm.glm.boot} or \code{qgcomp.emm.glm.ee}}
 
 \item{alpha}{alpha level for confidence intervals}
 
@@ -32,8 +32,8 @@ only the partial outcome due to the intercept and the confounders}
 Calculates: expected outcome (on the link scale), mean difference (link scale) and the standard error of the mean difference (link scale) for pointwise comparisons
 }
 \details{
-The comparison of interest following a qgcomp fit is often comparisons of model predictions at various values of the joint-exposures (e.g. expected outcome at all exposures at the 1st quartile vs. the 3rd quartile). The expected outcome at a given joint exposure and at a given level of non-exposure covariates (W) is given as E(Y|S,W=w), where S takes on integer values 0 to q-1. Thus, comparisons are of the type E(Y|S=s,W=w) - E(Y|S=s2,W=w) where s and s2 are two different values of the joint exposures (e.g. 0 and 2). This function yields E(Y|S,W=w) as well as E(Y|S=s,W=w) - E(Y|S=p,W=w) where s is any value of S and p is the value chosen via "pointwise ref" - e.g. for binomial variables this will equal the risk/ prevalence difference at all values of S, with the referent category S=p-1. For the non-boostrapped version of quantile g-computation (under a linear model)
-Note that function only works with standard "qgcompint" objects from qgcomp.emm.noboot (so it doesn't work with zero inflated, hurdle, or Cox models)
+The comparison of interest following a qgcomp fit is often comparisons of model predictions at various values of the joint-exposures (e.g. expected outcome at all exposures at the 1st quartile vs. the 3rd quartile). The expected outcome at a given joint exposure and at a given level of non-exposure covariates (W) is given as E(Y|S, W=w), where S takes on integer values 0 to q-1. Thus, comparisons are of the type E(Y|S=s, W=w) - E(Y|S=s2, W=w) where s and s2 are two different values of the joint exposures (e.g. 0 and 2). This function yields E(Y|S, W=w) as well as E(Y|S=s, W=w) - E(Y|S=p, W=w) where s is any value of S and p is the value chosen via "pointwise ref" - e.g. for binomial variables this will equal the risk/ prevalence difference at all values of S, with the referent category S=p-1. For the non-boostrapped version of quantile g-computation (under a linear model)
+Note that function only works with standard "qgcompint" objects from qgcomp.emm.glm.noboot (so it doesn't work with zero inflated, hurdle, or Cox models)
 Variance for the overall effect estimate is given by: \eqn{transpose(G) Cov(\beta) G}
 Where the "gradient vector" G is given by
 \deqn{G = [\partial(f(\beta))/\partial\beta_1 = 1, ..., \partial(f(\beta))/\partial\beta_3= 1]}
@@ -44,33 +44,39 @@ This variance is used to create pointwise confidence intervals via a normal appr
 set.seed(50)
 # linear model, binary modifier
 dat <- data.frame(y=runif(50), x1=runif(50), x2=runif(50),
-z=rbinom(50,1,0.5), r=rbinom(50,1,0.5))
-(qfit <- qgcomp.emm.noboot(f=y ~ z + x1 + x2, emmvar="z",
+z=rbinom(50, 1, 0.5), r=rbinom(50, 1, 0.5))
+(qfit <- qgcomp.emm.glm.noboot(f=y ~ z + x1 + x2, emmvar="z",
   expnms = c('x1', 'x2'), data=dat, q=4, family=gaussian()))
 pointwisebound(qfit, pointwiseref = 2, emmval = 0.1)
 # linear model, categorical modifier
 dat3 <- data.frame(y=runif(50), x1=runif(50), x2=runif(50),
-z=as.factor(sample(0:2, 50,replace=TRUE)), r=rbinom(50,1,0.5))
-(qfit3 <- qgcomp.emm.noboot(f=y ~ z + x1 + x2, emmvar="z",
+z=as.factor(sample(0:2, 50, replace=TRUE)), r=rbinom(50, 1, 0.5))
+(qfit3 <- qgcomp.emm.glm.noboot(f=y ~ z + x1 + x2, emmvar="z",
 expnms = c('x1', 'x2'), data=dat3, q=5, family=gaussian()))
 pointwisebound(qfit3, pointwiseref = 2, emmval = 0)
 pointwisebound(qfit3, pointwiseref = 2, emmval = 1)
 pointwisebound(qfit3, pointwiseref = 2, emmval = 2)
 # linear model, categorical modifier, bootstrapped
 # set B larger for real examples
-(qfit3b <- qgcomp.emm.boot(f=y ~ z + x1 + x2, emmvar="z",
+(qfit3b <- qgcomp.emm.glm.boot(f=y ~ z + x1 + x2, emmvar="z",
 expnms = c('x1', 'x2'), data=dat3, q=5, family=gaussian(), B=10))
 pointwisebound(qfit3b, pointwiseref = 2, emmval = 0)
 pointwisebound(qfit3b, pointwiseref = 2, emmval = 1)
 pointwisebound(qfit3b, pointwiseref = 2, emmval = 2)
+# linear model, categorical modifier, estimating equation
+(qfit3c <- qgcomp.emm.glm.ee(f=y ~ z + x1 + x2, emmvar="z",
+expnms = c('x1', 'x2'), data=dat3, q=5, family=gaussian()))
+pointwisebound(qfit3c, pointwiseref = 2, emmval = 0)
+pointwisebound(qfit3c, pointwiseref = 2, emmval = 1)
+pointwisebound(qfit3c, pointwiseref = 2, emmval = 2)
 # logistic model, binary modifier
 dat4 <- data.frame(y=rbinom(50, 1, 0.3), x1=runif(50), x2=runif(50),
-  z=as.factor(sample(0:1, 50,replace=TRUE)), r=rbinom(50,1,0.5))
-(qfit4 <- qgcomp.emm.boot(f=y ~ z + x1 + x2, emmvar="z",
+  z=as.factor(sample(0:1, 50, replace=TRUE)), r=rbinom(50, 1, 0.5))
+(qfit4 <- qgcomp.emm.glm.boot(f=y ~ z + x1 + x2, emmvar="z",
 expnms = c('x1', 'x2'), data=dat4, q=5, family=binomial(), B=10))
 pointwisebound(qfit4, pointwiseref = 2, emmval = 0) # reverts to odds ratio
 
 }
 \seealso{
-\code{\link[qgcompint]{qgcomp.emm.noboot}}, \code{\link[qgcomp]{pointwisebound.noboot}}
+\code{\link[qgcompint]{qgcomp.emm.glm.noboot}}, \code{\link[qgcomp]{pointwisebound.noboot}}
 }
