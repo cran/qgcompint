@@ -1,8 +1,8 @@
 Package: qgcompint
 Title: Quantile G-Computation Extensions for Effect Measure
         Modification
-Version: 1.0.0
-Date: 2025-03-12
+Version: 1.0.2
+Date: 2025-07-22
 Authors@R: 
     person(given = "Alexander",
            family = "Keil",
@@ -30,6 +30,6 @@ Encoding: UTF-8
 Language: en-US
 RoxygenNote: 7.3.2
 NeedsCompilation: no
-Packaged: 2025-03-12 15:59:37 UTC; keilap
+Packaged: 2025-07-22 15:10:38 UTC; keilap
 Repository: CRAN
-Date/Publication: 2025-03-12 16:40:02 UTC
+Date/Publication: 2025-07-22 15:31:14 UTC
